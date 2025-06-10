@@ -11,11 +11,20 @@ from audio_recorder_streamlit import audio_recorder
 from io import BytesIO
 import os
 os.environ["TOKENIZERS_PARALLELISM"] = "false"
+
+# Load the environment variables from the api_keys.txt file
+with open('api_keys.txt', 'r') as file:
+    for line in file:
+        if 'groq_key' in line:
+            groq_api_key = line.split('=')[1].strip()
+            # Remove single quotes from the groq_api_key
+            groq_api_key = groq_api_key.replace("'", '')
+        
 # --- Configuration ---
 EMBEDDING_MODEL = "all-MiniLM-L6-v2"
 INDEX_PATH = "newsbot_data/newsbot_faiss.index"
 DOCS_PATH = "newsbot_data/newsbot_docs.pkl"
-GROQ_API_KEY = "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"
+GROQ_API_KEY = groq_api_key
 LLM_MODEL = "llama3-8b-8192"
 
 # --- Load resources ---
