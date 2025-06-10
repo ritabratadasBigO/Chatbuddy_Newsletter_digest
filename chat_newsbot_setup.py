@@ -3,6 +3,7 @@ import requests
 import pickle
 from datetime import datetime, timedelta
 from bs4 import BeautifulSoup
+import re
 
 from sentence_transformers import SentenceTransformer
 import faiss
@@ -12,28 +13,48 @@ import numpy as np
 BASE_URL = "https://niteowl1986.github.io/Daily-News-Feed/"
 OUTPUT_DIR = "newsbot_data"
 INDEX_OUTPUT = os.path.join(OUTPUT_DIR, "newsbot_faiss.index")
-DOCS_OUTPUT = os.path.join(OUTPUT_DIR, "newsbot_docs.pkl")
+DOCS_OUTPUT = "newsbot_data/newsbot_docs.pkl"
 EMBEDDING_MODEL = "all-MiniLM-L6-v2"
 
 # Ensure output directory exists
 os.makedirs(OUTPUT_DIR, exist_ok=True)
 
-# Prepare date range
-start_date = datetime(2024, 10, 1)
-end_date = datetime.today()
+# Start date discovery from GitHub filenames
+try:
+    response = requests.get("https://niteowl1986.github.io/Daily-News-Feed/")
+    soup = BeautifulSoup(response.text, "html.parser")
+    links = soup.find_all("a", href=True)
+    date_strings = []
 
-# Load embedding model
-model = SentenceTransformer(EMBEDDING_MODEL)
+    for link in links:
+        match = re.search(r"daily_news_feed_(\d{2}[A-Za-z]{3}\d{4})\.html", link["href"])
+        if match:
+            date_strings.append(match.group(1))
 
-# Load existing documents if available
-existing_docs = []
+    if date_strings:
+        latest_date_str = max(date_strings)
+        start_date = datetime.strptime(latest_date_str, '%d%b%Y') + timedelta(days=1)
+    else:
+        start_date = datetime(2024, 10, 1)
+except Exception as e:
+    print(f"⚠️ Could not fetch or parse GitHub page: {e}")
+    start_date = datetime(2024, 10, 1)
+
+# Load existing docs
 if os.path.exists(DOCS_OUTPUT):
     with open(DOCS_OUTPUT, "rb") as f:
         existing_docs = pickle.load(f)
+else:
+    existing_docs = []
 
-existing_dates = set(doc[0] for doc in existing_docs)
+end_date = datetime.today()
+
 documents = list(existing_docs)
+existing_dates = set(doc[0] for doc in existing_docs)
 dates_processed = 0
+
+# Load embedding model
+model = SentenceTransformer(EMBEDDING_MODEL)
 
 while start_date <= end_date:
     formatted_date = start_date.strftime('%d%b%Y')
