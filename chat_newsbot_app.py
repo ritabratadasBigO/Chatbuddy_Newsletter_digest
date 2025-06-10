@@ -10,14 +10,6 @@ from io import BytesIO
 import os
 from datetime import datetime, timedelta
 os.environ["TOKENIZERS_PARALLELISM"] = "false"
-
-# Load the environment variables from the api_keys.txt file
-with open('api_keys.txt', 'r') as file:
-    for line in file:
-        if 'groq_key' in line:
-            groq_api_key = line.split('=')[1].strip()
-            # Remove single quotes from the groq_api_key
-            groq_api_key = groq_api_key.replace("'", '')
         
 # --- Configuration ---
 EMBEDDING_MODEL = "all-MiniLM-L6-v2"
