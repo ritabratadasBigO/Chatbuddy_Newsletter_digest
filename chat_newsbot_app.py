@@ -23,7 +23,8 @@ with open('api_keys.txt', 'r') as file:
 EMBEDDING_MODEL = "all-MiniLM-L6-v2"
 INDEX_PATH = "newsbot_data/newsbot_faiss.index"
 DOCS_PATH = "newsbot_data/newsbot_docs.pkl"
-GROQ_API_KEY = groq_api_key
+GROQ_API_KEY = os.environ["GROQ_API_KEY"]
+
 LLM_MODEL = "llama3-8b-8192"
 
 # --- Load resources ---
