@@ -1,2 +1,7 @@
 streamlit
-requests
+faiss-cpu
+sentence-transformers
+numpy
+groq
+speechrecognition
+audio-recorder-streamlit
