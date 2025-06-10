@@ -5,3 +5,5 @@ numpy
 groq
 speechrecognition
 audio-recorder-streamlit
+requests
+beautifulsoup4
