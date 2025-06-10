@@ -1,5 +1,3 @@
-
-
 import streamlit as st
 import faiss
 import pickle
@@ -10,6 +8,7 @@ import speech_recognition as sr
 from audio_recorder_streamlit import audio_recorder
 from io import BytesIO
 import os
+from datetime import datetime, timedelta
 os.environ["TOKENIZERS_PARALLELISM"] = "false"
 
 # Load the environment variables from the api_keys.txt file
@@ -50,7 +49,32 @@ groq_client = Groq(api_key=GROQ_API_KEY)
 def get_top_k_docs(question, k=5):
     question_vec = embedder.encode([question])
     D, I = index.search(np.array(question_vec).astype("float32"), k)
-    return [documents[i] for i in I[0]]
+    return [(documents[i][0], documents[i][1]) for i in I[0]]
+
+import re
+from calendar import month_abbr
+
+def extract_target_month(query):
+    match = re.search(r"(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)\s?(\d{4})?", query.lower())
+    if match:
+        mon = match.group(1).capitalize()
+        year = match.group(2) if match.group(2) else None
+        return f"{mon}{year}" if year else mon
+    return None
+
+def extract_relative_date_range(query):
+    query = query.lower()
+    today = datetime.today()
+
+    if "last week" in query:
+        return today - timedelta(days=7), today
+    elif "last 2 weeks" in query or "past 2 weeks" in query:
+        return today - timedelta(days=14), today
+    elif "last month" in query or "past month" in query:
+        return today - timedelta(days=30), today
+    elif "last 3 months" in query or "past 3 months" in query:
+        return today - timedelta(days=90), today
+    return None, None
 
 # --- Streamlit interface ---
 user_question = st.text_input("💬 Ask a question about recent news:")
@@ -79,11 +103,41 @@ if audio_bytes:
 # --- Choose between text or voice input
 final_question = user_question if user_question else voice_question
 
+target_month = extract_target_month(final_question)
+
 # --- Chatbot logic ---
 if final_question:
     with st.spinner("Thinking..."):
         top_docs = get_top_k_docs(final_question)
-        context = "\n\n".join(top_docs)
+        filtered_docs = top_docs
+
+        # Time range filter (relative dates)
+        start_date, end_date = extract_relative_date_range(final_question)
+        if start_date and end_date:
+            def parse_doc_date(date_str):
+                try:
+                    return datetime.strptime(date_str.strip(), "%d%b%Y")
+                except Exception:
+                    return None
+
+            filtered_docs = [
+                doc for doc in filtered_docs
+                if (parsed := parse_doc_date(doc[0])) and start_date <= parsed <= end_date
+            ]
+
+            if not filtered_docs:
+                st.warning(f"No news summaries found in the requested time range.")
+                st.stop()
+
+        # Month name filter
+        if target_month:
+            filtered_docs = [doc for doc in filtered_docs if target_month in doc[0]]
+
+            if not filtered_docs:
+                st.warning(f"No relevant news found for {target_month}. Try another question.")
+                st.stop()
+
+        context = "\n\n".join([f"Date: {doc[0]}\nSummary: {doc[1]}" for doc in filtered_docs])
 
         summarization_prompt = f"""
         Based on the following news summaries, provide a 2-3 line summary that captures the main themes, developments, or notable events:
@@ -107,5 +161,5 @@ if final_question:
     st.markdown(answer)
 
     with st.expander("🔍 Context used from articles"):
-        for i, doc in enumerate(top_docs):
-            st.markdown(f"**Doc {i+1}:** {doc}")
+        for i, doc in enumerate(filtered_docs):
+            st.markdown(f"**Doc {i+1} ({doc[0]}):** {doc[1]}")
