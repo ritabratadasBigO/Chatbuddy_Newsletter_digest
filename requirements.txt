@@ -7,3 +7,4 @@ speechrecognition==3.14.3
 audio-recorder-streamlit==0.0.10
 requests==2.31.0
 beautifulsoup4==4.12.2
+huggingface_hub==0.14.1
