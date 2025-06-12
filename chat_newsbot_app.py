@@ -8,9 +8,7 @@ import speech_recognition as sr
 from audio_recorder_streamlit import audio_recorder
 from io import BytesIO
 import os
-import re
 from datetime import datetime, timedelta
-from calendar import month_abbr
 os.environ["TOKENIZERS_PARALLELISM"] = "false"
         
 # --- Configuration ---
@@ -19,7 +17,7 @@ INDEX_PATH = "newsbot_data/newsbot_faiss.index"
 DOCS_PATH = "newsbot_data/newsbot_docs.pkl"
 GROQ_API_KEY = os.environ["GROQ_API_KEY"]
 
-LLM_MODEL = "llama-3.1-8b-instant"
+LLM_MODEL = "llama3-8b-8192"
 
 # --- Load resources ---
 st.set_page_config(page_title="NewsBot Chat", layout="wide")
@@ -40,30 +38,14 @@ index, documents = load_faiss()
 embedder = load_embedder()
 groq_client = Groq(api_key=GROQ_API_KEY)
 
-
 # --- Helper to search similar documents ---
-def get_top_k_docs(question, k=50, final_k=10):
+def get_top_k_docs(question, k=5):
     question_vec = embedder.encode([question])
     D, I = index.search(np.array(question_vec).astype("float32"), k)
+    return [(documents[i][0], documents[i][1]) for i in I[0]]
 
-    initial_docs = [(documents[i][0], documents[i][1], D[0][j]) for j, i in enumerate(I[0])]
-
-    # Keyword filtering: rank higher if question tokens match doc text
-    def keyword_score(doc_text, query):
-        query_words = set(re.findall(r'\w+', query.lower()))
-        doc_words = set(re.findall(r'\w+', doc_text.lower()))
-        return len(query_words & doc_words)
-
-    scored_docs = [
-        (date, text, sim_score, keyword_score(text, question))
-        for date, text, sim_score in initial_docs
-    ]
-
-    # Combine similarity and keyword score (weighting can be adjusted)
-    ranked_docs = sorted(scored_docs, key=lambda x: (x[3], x[2]), reverse=True)
-
-    return [(doc[0], doc[1]) for doc in ranked_docs[:final_k]]
-
+import re
+from calendar import month_abbr
 
 def extract_target_month(query):
     match = re.search(r"(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)\s?(\d{4})?", query.lower())
@@ -77,12 +59,7 @@ def extract_relative_date_range(query):
     query = query.lower()
     today = datetime.today()
 
-    if "today" in query or "as of now" in query:
-        return today, today
-    elif "yesterday" in query:
-        yesterday = today - timedelta(days=1)
-        return yesterday, yesterday
-    elif "last week" in query:
+    if "last week" in query:
         return today - timedelta(days=7), today
     elif "last 2 weeks" in query or "past 2 weeks" in query:
         return today - timedelta(days=14), today
@@ -90,13 +67,6 @@ def extract_relative_date_range(query):
         return today - timedelta(days=30), today
     elif "last 3 months" in query or "past 3 months" in query:
         return today - timedelta(days=90), today
-    else:
-        # Match expressions like "last 5 days", "past 10 days"
-        match = re.search(r"(?:last|past)\s+(\d+)\s+days", query)
-        if match:
-            days = int(match.group(1))
-            return today - timedelta(days=days), today
-
     return None, None
 
 # --- Streamlit interface ---
@@ -166,7 +136,7 @@ if final_question:
         Based on the following news summaries, provide a 4 line summary that captures the main themes, developments, or notable events:
 
         {context}
-        - Else if there is no relevant summary, give a 2 line summary of the most latest news by searching the internet.
+        - Else if there are no news summaries to use then give a 2 line summary by searching the news for the latest news.
 
         Question: {final_question}
         """
@@ -175,7 +145,7 @@ if final_question:
             model=LLM_MODEL,
             messages=[
                 {"role": "system", "content": """You are a helpful assistant. Use the following news summaries to respond.
-                  Else if there are no relevant news articles/summaries to show then search the internet for the most upto date news."""},
+                 Else if there are no relevant summaries to use, then just search the internet to provide a summary."""},
                 {"role": "user", "content": summarization_prompt}
             ],
             temperature=0.7
