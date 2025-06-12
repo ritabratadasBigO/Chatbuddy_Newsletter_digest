@@ -2,6 +2,7 @@ services:
   - type: web
     name: newsbot-chat
     env: python
+    runtime: python3.10
     plan: free
     buildCommand: pip install -r requirements.txt
     startCommand: streamlit run chat_newsbot_app.py
@@ -11,3 +12,4 @@ cronJobs:
   - name: update-newsbot-index
     schedule: "30 2 * * *"  # runs daily at 08:00 AM IST (02:30 UTC)
     command: python chat_newsbot_setup.py
+    buildCommand: pip install -r requirements.txt
