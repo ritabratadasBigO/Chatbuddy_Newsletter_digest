@@ -87,17 +87,26 @@ while start_date <= end_date:
 print(f"\n🔎 Total documents collected: {len(documents)} from {dates_processed} new days")
 
 # Generate embeddings only for new documents
-texts_for_embedding = [doc[1] for doc in documents]
+new_documents = [doc for doc in documents if doc[0] not in existing_dates]
+texts_for_embedding = [doc[1] for doc in new_documents]
 embeddings = model.encode(texts_for_embedding, show_progress_bar=True)
 
-# Save FAISS index
-dimension = embeddings.shape[1]
-index = faiss.IndexFlatL2(dimension)
-index.add(np.array(embeddings).astype('float32'))
-faiss.write_index(index, INDEX_OUTPUT)
+if embeddings.size > 0:
+    dimension = embeddings.shape[1]
+    if os.path.exists(INDEX_OUTPUT):
+        index = faiss.read_index(INDEX_OUTPUT)
+    else:
+        index = faiss.IndexFlatL2(dimension)
 
-# Save document texts with date
-with open(DOCS_OUTPUT, "wb") as f:
-    pickle.dump(documents, f)
+    index.add(np.array(embeddings).astype('float32'))
+    faiss.write_index(index, INDEX_OUTPUT)
 
-print("\n✅ FAISS index and document texts saved with date tracking.")
+    # Append only new documents to existing_docs and save
+    documents = existing_docs + new_documents
+
+    with open(DOCS_OUTPUT, "wb") as f:
+        pickle.dump(documents, f)
+
+    print("\n✅ FAISS index and document texts saved with date tracking.")
+else:
+    print("\n⚠️ No new documents to embed or index.")
