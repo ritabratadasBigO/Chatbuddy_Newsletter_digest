@@ -4,10 +4,14 @@ import pickle
 from datetime import datetime, timedelta
 from bs4 import BeautifulSoup
 import re
+import subprocess
 
 from sentence_transformers import SentenceTransformer
 import faiss
 import numpy as np
+
+# Disable tokenizer parallelism
+os.environ["TOKENIZERS_PARALLELISM"] = "false" 
 
 # Config
 BASE_URL = "https://niteowl1986.github.io/Daily-News-Feed/"
@@ -15,6 +19,7 @@ OUTPUT_DIR = "newsbot_data"
 INDEX_OUTPUT = os.path.join(OUTPUT_DIR, "newsbot_faiss.index")
 DOCS_OUTPUT = "newsbot_data/newsbot_docs.pkl"
 EMBEDDING_MODEL = "all-MiniLM-L6-v2"
+GITHUB_PAT = os.getenv("GITHUB_PAT")
 
 # Ensure output directory exists
 os.makedirs(OUTPUT_DIR, exist_ok=True)
@@ -110,3 +115,17 @@ if embeddings.size > 0:
     print("\n✅ FAISS index and document texts saved with date tracking.")
 else:
     print("\n⚠️ No new documents to embed or index.")
+
+REPO_URL = f"https://{GITHUB_PAT}@github.com/niteowl1986/Chatbuddy_Newsletter_digest.git"
+
+def git_commit_and_push():
+    try:
+        subprocess.run(["git", "add", "newsbot_data/newsbot_docs.pkl", "newsbot_data/newsbot_faiss.index"], check=True)
+        subprocess.run(["git", "commit", "-m", "Automated daily update of FAISS index"], check=True)
+        subprocess.run(["git", "remote", "set-url", "origin", REPO_URL], check=True)
+        subprocess.run(["git", "push", "origin", "main"], check=True)
+        print("✅ Changes pushed to GitHub.")
+    except subprocess.CalledProcessError as e:
+        print(f"❌ Git operation failed: {e}")
+
+git_commit_and_push()
