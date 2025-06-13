@@ -121,6 +121,13 @@ REPO_URL = f"https://{GITHUB_PAT}@github.com/niteowl1986/Chatbuddy_Newsletter_di
 def git_commit_and_push():
     try:
         subprocess.run(["git", "add", "newsbot_data/newsbot_docs.pkl", "newsbot_data/newsbot_faiss.index"], check=True)
+
+        # Check if there is anything to commit
+        result = subprocess.run(["git", "diff", "--cached", "--quiet"])
+        if result.returncode == 0:
+            print("ℹ️ Nothing new to commit.")
+            return
+
         subprocess.run(["git", "commit", "-m", "Automated daily update of FAISS index"], check=True)
         subprocess.run(["git", "remote", "set-url", "origin", REPO_URL], check=True)
         subprocess.run(["git", "push", "origin", "main"], check=True)
