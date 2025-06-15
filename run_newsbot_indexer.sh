@@ -10,5 +10,9 @@ pip install -r requirements.txt
 git config --global user.name "niteowl1986"
 git config --global user.email "49530755+niteowl1986@users.noreply.github.com"
 
+# Ensure we are on the main branch to avoid detached HEAD issues
+git checkout main
+git pull origin main
+
 # Run the setup script
 python chat_newsbot_setup.py
