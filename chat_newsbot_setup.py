@@ -143,13 +143,14 @@ def git_commit_and_push():
         # Only commit if there are staged changes
         result = subprocess.run(["git", "diff", "--cached", "--quiet"])
         if result.returncode == 0:
+            subprocess.run(["git", "status"])
             print("ℹ️ Nothing new to commit.")
             return
 
         subprocess.run(["git", "commit", "-m", "Automated daily update of FAISS index"], check=True)
         subprocess.run(["git", "push", "origin", "main"], check=True)
+        subprocess.run(["git", "status"])
         print("✅ Changes pushed to GitHub.")
-
     except subprocess.CalledProcessError as e:
         print(f"❌ Git operation failed: {e}")
 git_commit_and_push()
