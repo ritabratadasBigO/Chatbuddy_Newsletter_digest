@@ -19,7 +19,7 @@ OUTPUT_DIR = "newsbot_data"
 INDEX_OUTPUT = os.path.join(OUTPUT_DIR, "newsbot_faiss.index")
 DOCS_OUTPUT = "newsbot_data/newsbot_docs.pkl"
 EMBEDDING_MODEL = "all-MiniLM-L6-v2"
-# GITHUB_PAT = os.getenv("GITHUB_PAT")
+github_pat = os.getenv("GITHUB_PAT")
 
 # Ensure output directory exists
 os.makedirs(OUTPUT_DIR, exist_ok=True)
@@ -119,19 +119,28 @@ else:
 # REPO_URL = f"https://{GITHUB_PAT}@github.com/niteowl1986/Chatbuddy_Newsletter_digest.git" 
 
 def git_commit_and_push():
-    # Set up GitHub PAT-based remote URL if available
-    github_pat = os.getenv("GITHUB_PAT")
-    if github_pat:
-        subprocess.run([
-            "git", "remote", "set-url", "origin",
-            f"https://{github_pat}@github.com/niteowl1986/Chatbuddy_Newsletter_digest.git"
-        ], check=True)
-    else:
+    if not github_pat:
         print("❌ GITHUB_PAT not set in environment.")
+        return
+
     try:
+        # Ensure repo has a remote named origin; if not, add it
+        result = subprocess.run(["git", "remote"], capture_output=True, text=True)
+        remotes = result.stdout.strip().split("\n")
+        if "origin" not in remotes:
+            subprocess.run([
+                "git", "remote", "add", "origin",
+                f"https://{github_pat}@github.com/niteowl1986/Chatbuddy_Newsletter_digest.git"
+            ], check=True)
+        else:
+            subprocess.run([
+                "git", "remote", "set-url", "origin",
+                f"https://{github_pat}@github.com/niteowl1986/Chatbuddy_Newsletter_digest.git"
+            ], check=True)
+
         subprocess.run(["git", "add", "newsbot_data/newsbot_docs.pkl", "newsbot_data/newsbot_faiss.index"], check=True)
 
-        # Check if there is anything to commit
+        # Only commit if there are staged changes
         result = subprocess.run(["git", "diff", "--cached", "--quiet"])
         if result.returncode == 0:
             print("ℹ️ Nothing new to commit.")
@@ -140,7 +149,7 @@ def git_commit_and_push():
         subprocess.run(["git", "commit", "-m", "Automated daily update of FAISS index"], check=True)
         subprocess.run(["git", "push", "origin", "main"], check=True)
         print("✅ Changes pushed to GitHub.")
+
     except subprocess.CalledProcessError as e:
         print(f"❌ Git operation failed: {e}")
-
 git_commit_and_push()
