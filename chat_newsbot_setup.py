@@ -153,4 +153,16 @@ def git_commit_and_push():
         print("✅ Changes pushed to GitHub.")
     except subprocess.CalledProcessError as e:
         print(f"❌ Git operation failed: {e}")
+        try:
+            requests.get("https://hc-ping.com/ccd7991c-695e-407a-9a99-6fd245c5b72e/fail")
+        except:
+            pass
+
 git_commit_and_push()
+
+# Healthchecks.io monitoring ping
+try:
+    # Successful run ping
+    requests.get("https://hc-ping.com/ccd7991c-695e-407a-9a99-6fd245c5b72e")
+except Exception as e:
+    print(f"⚠️ Failed to send ping to Healthchecks: {e}")
