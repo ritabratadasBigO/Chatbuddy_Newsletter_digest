@@ -14,7 +14,7 @@ import numpy as np
 os.environ["TOKENIZERS_PARALLELISM"] = "false" 
 
 # Config
-BASE_URL = "https://niteowl1986.github.io/Daily-News-Feed/"
+BASE_URL = "https://ritabratadasBigO.github.io/Daily-News-Feed/"
 OUTPUT_DIR = "newsbot_data"
 INDEX_OUTPUT = os.path.join(OUTPUT_DIR, "newsbot_faiss.index")
 DOCS_OUTPUT = "newsbot_data/newsbot_docs.pkl"
@@ -26,7 +26,7 @@ os.makedirs(OUTPUT_DIR, exist_ok=True)
 
 # Start date discovery from GitHub filenames
 try:
-    response = requests.get("https://niteowl1986.github.io/Daily-News-Feed/")
+    response = requests.get("https://ritabratadasBigO.github.io/Daily-News-Feed/")
     soup = BeautifulSoup(response.text, "html.parser")
     links = soup.find_all("a", href=True)
     date_strings = []
@@ -116,7 +116,6 @@ if embeddings.size > 0:
 else:
     print("\n⚠️ No new documents to embed or index.")
 
-# REPO_URL = f"https://{GITHUB_PAT}@github.com/niteowl1986/Chatbuddy_Newsletter_digest.git" 
 
 def git_commit_and_push():
     if not github_pat:
@@ -130,12 +129,12 @@ def git_commit_and_push():
         if "origin" not in remotes:
             subprocess.run([
                 "git", "remote", "add", "origin",
-                f"https://{github_pat}@github.com/niteowl1986/Chatbuddy_Newsletter_digest.git"
+                f"https://{github_pat}@github.com/ritabratadasBigO/Chatbuddy_Newsletter_digest.git"
             ], check=True)
         else:
             subprocess.run([
                 "git", "remote", "set-url", "origin",
-                f"https://{github_pat}@github.com/niteowl1986/Chatbuddy_Newsletter_digest.git"
+                f"https://{github_pat}@github.com/ritabratadasBigO/Chatbuddy_Newsletter_digest.git"
             ], check=True)
 
         subprocess.run(["git", "add", "newsbot_data/newsbot_docs.pkl", "newsbot_data/newsbot_faiss.index"], check=True)
