@@ -17,7 +17,7 @@ INDEX_PATH = "newsbot_data/newsbot_faiss.index"
 DOCS_PATH = "newsbot_data/newsbot_docs.pkl"
 GROQ_API_KEY = os.environ["GROQ_API_KEY"]
 
-LLM_MODEL = "llama3-8b-8192"
+LLM_MODEL = "llama-3.1-8b-instant"
 
 # --- Load resources ---
 st.set_page_config(page_title="NewsBot Chat", layout="wide")
