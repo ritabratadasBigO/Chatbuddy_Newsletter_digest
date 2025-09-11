@@ -19,6 +19,7 @@ GROQ_API_KEY = os.environ["GROQ_API_KEY"]
 
 LLM_MODEL = "llama-3.1-8b-instant"
 
+
 # --- Load resources ---
 st.set_page_config(page_title="NewsBot Chat", layout="wide")
 st.title("🧠 Chat with Dhurin News Summaries")
